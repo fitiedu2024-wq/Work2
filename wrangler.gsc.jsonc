@@ -1,0 +1,82 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "google-search-console-mcp-template",
+  "main": "src/gsc-worker.ts",
+  "compatibility_date": "2026-09-04",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1,
+    "logs": {
+      "enabled": true,
+      "invocation_logs": true,
+      "head_sampling_rate": 1
+    }
+  },
+  "env": {
+    "layal": {
+      "name": "layal-google-search-console-mcp",
+      "vars": {
+        "BRAND_SLUG": "layal",
+        "BRAND_LABEL": "Layal Dress",
+        "BRAND_SITE_URL": "https://layaldress.com/",
+        "GA_ACCOUNT_ID": "",
+        "GA_ACCOUNT_NAME": "",
+        "GA_PROPERTY_ID": "",
+        "GSC_SITE_URL": "sc-domain:layaldress.com"
+      },
+      "kv_namespaces": [{
+        "binding": "OAUTH_KV",
+        "id": "539af74b12b64261aaea2b92a3244a04"
+      }]
+    },
+    "toleen": {
+      "name": "toleen-google-search-console-mcp",
+      "vars": {
+        "BRAND_SLUG": "toleen",
+        "BRAND_LABEL": "Toleen Fashion",
+        "BRAND_SITE_URL": "https://toleen-fashion22.com/",
+        "GA_ACCOUNT_ID": "",
+        "GA_ACCOUNT_NAME": "",
+        "GA_PROPERTY_ID": "",
+        "GSC_SITE_URL": "https://toleen-fashion22.com/"
+      },
+      "kv_namespaces": [{
+        "binding": "OAUTH_KV",
+        "id": "573b2569e52243fe90863f09ddc846f1"
+      }]
+    },
+    "asom": {
+      "name": "asom-google-search-console-mcp",
+      "vars": {
+        "BRAND_SLUG": "asom",
+        "BRAND_LABEL": "Asom Fashion",
+        "BRAND_SITE_URL": "",
+        "GA_ACCOUNT_ID": "",
+        "GA_ACCOUNT_NAME": "",
+        "GA_PROPERTY_ID": "",
+        "GSC_SITE_URL": ""
+      },
+      "kv_namespaces": [{
+        "binding": "OAUTH_KV",
+        "id": "REPLACE_WITH_ASOM_GSC_OAUTH_KV_ID"
+      }]
+    },
+    "ahmedayoutty": {
+      "name": "ahmedayoutty-google-search-console-mcp",
+      "vars": {
+        "BRAND_SLUG": "ahmedayoutty",
+        "BRAND_LABEL": "Ahmed Aydoutty",
+        "BRAND_SITE_URL": "https://ahmedayoutty.com/",
+        "GA_ACCOUNT_ID": "",
+        "GA_ACCOUNT_NAME": "",
+        "GA_PROPERTY_ID": "",
+        "GSC_SITE_URL": "sc-domain:ahmedayoutty.com"
+      },
+      "kv_namespaces": [{
+        "binding": "OAUTH_KV",
+        "id": "5877b460710a43beb40b938b2778eaa2"
+      }]
+    }
+  }
+}

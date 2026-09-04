@@ -1,0 +1,3 @@
+# Copy to .dev.vars for local development. Never commit .dev.vars.
+GOOGLE_SERVICE_ACCOUNT_KEY={"type":"service_account","project_id":"your-gcp-project","private_key_id":"replace-me","private_key":"REPLACE_WITH_REAL_PRIVATE_KEY_PEM","client_email":"ga-gsc-mcp@your-gcp-project.iam.gserviceaccount.com","client_id":"replace-me","token_uri":"https://oauth2.googleapis.com/token"}
+MCP_LOGIN_PASSWORD=replace-with-a-long-random-password

@@ -1,0 +1,38 @@
+{
+  "name": "google-ecommerce-mcp-workers",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev:ga": "wrangler dev --config wrangler.ga.jsonc --env layal --port 8791 --inspector-port 9291",
+    "dev:gsc": "wrangler dev --config wrangler.gsc.jsonc --env layal --port 8792 --inspector-port 9292",
+    "deploy:ga:layal": "wrangler deploy --config wrangler.ga.jsonc --env layal",
+    "deploy:ga:toleen": "wrangler deploy --config wrangler.ga.jsonc --env toleen",
+    "deploy:ga:asom": "wrangler deploy --config wrangler.ga.jsonc --env asom",
+    "deploy:gsc:layal": "wrangler deploy --config wrangler.gsc.jsonc --env layal",
+    "deploy:gsc:toleen": "wrangler deploy --config wrangler.gsc.jsonc --env toleen",
+    "deploy:gsc:asom": "wrangler deploy --config wrangler.gsc.jsonc --env asom",
+    "deploy:gsc:ahmedayoutty": "wrangler deploy --config wrangler.gsc.jsonc --env ahmedayoutty",
+    "typecheck": "tsc --noEmit",
+    "types": "wrangler types --config wrangler.ga.jsonc --env layal --env-file .dev.vars.example --strict-vars=false types/worker-configuration.d.ts",
+    "build:ga": "wrangler deploy --dry-run --config wrangler.ga.jsonc --env layal && wrangler deploy --dry-run --config wrangler.ga.jsonc --env toleen && wrangler deploy --dry-run --config wrangler.ga.jsonc --env asom",
+    "build:gsc": "wrangler deploy --dry-run --config wrangler.gsc.jsonc --env layal && wrangler deploy --dry-run --config wrangler.gsc.jsonc --env toleen && wrangler deploy --dry-run --config wrangler.gsc.jsonc --env asom && wrangler deploy --dry-run --config wrangler.gsc.jsonc --env ahmedayoutty",
+    "build": "npm run typecheck && npm run build:ga && npm run build:gsc",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@cloudflare/workers-oauth-provider": "^0.10.3",
+    "@modelcontextprotocol/server": "^2.0.0",
+    "agents": "^0.22.0",
+    "zod": "^4.5.4"
+  },
+  "devDependencies": {
+    "@types/node": "^26.4.1",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.0",
+    "wrangler": "^4.129.0"
+  },
+  "engines": {
+    "node": ">=22.18"
+  }
+}
