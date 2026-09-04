@@ -134,6 +134,10 @@ npm run dev:gsc   # Layal GSC on :8792
 
 ---
 
+## Architecture comparison and tool roadmap
+
+See [`docs/REPO_COMPARISON_AND_TOOL_ROADMAP.md`](docs/REPO_COMPARISON_AND_TOOL_ROADMAP.md) for how this repo compares with the `work` (Merchant Center) repo, which conventions to port from it, and the planned growth of the GA and GSC tool surface.
+
 ## Other envs in this repo
 
 `wrangler.*.jsonc` also lists stub/extra envs (e.g. `asom`, `ahmedayoutty`). Layal and Toleen GA + GSC are the supported live pair above. Treat other envs as incomplete unless you finish their KV IDs, vars, secrets, and IAM grants.

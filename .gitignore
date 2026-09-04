@@ -11,9 +11,10 @@ terminals/
 # secrets / local
 .mcp_login_password
 .sa_key_raw.json
-.dev.vars
 *.pem
 secrets/
-node_modules/
-.wrangler/
-dist/
+*-secrets/
+GOOGLE_SERVICE_ACCOUNT_KEY.json
+MCP_LOGIN_PASSWORD*
+*.tar.gz
+*.zip
