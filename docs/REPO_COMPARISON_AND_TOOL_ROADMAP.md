@@ -35,9 +35,9 @@ Work2 has the cleaner, more modern skeleton (stateless MCP handler, resource-bou
 | **CI / deploy** | Manual `npm run deploy:*`. | Cloudflare Workers Builds: push to `main` deploys all stores; non-main pushes upload previews. | **work** — Work2 should adopt Workers Builds. |
 | **Tests** | 8 Vitest tests on scope/lock logic, passing. | A template "Hello World" spec that does not match the code; no test script. | **Work2**. |
 | **Type hygiene** | `wrangler types` output committed (regenerated on this branch; was hand-trimmed and broke `tsc`). | 588 KB `worker-configuration.d.ts` committed. | Tie after this branch. |
-| **Tool metadata** | No `title`, **no annotations** (`readOnlyHint` / `destructiveHint`). Deletes use a `confirm: true` literal instead. | Every tool has a title and read/write/action annotations; every write takes `change_summary`. | **work** — clients (Claude, Cursor) use annotations to decide when to ask for approval. |
-| **Tool depth** | Thin wrappers over the raw API. Callers must know GA dimension/metric names. | Raw wrappers **plus** shaped reports (`get_product_performance`, `get_best_sellers`…), diagnostics (`render_*_issues`), universal scoped `merchant_api_read` / `merchant_api_write`, `batch_*`. | **work**. |
-| **Discoverability** | None. | `list_merchant_capabilities` catalog tool. | **work**. |
+| **Tool metadata** | *Before this branch:* no `title`, **no annotations**. *Now:* every tool has a title, read/write/action annotations, and writes take `change_summary`. | Every tool has a title and read/write/action annotations; every write takes `change_summary`. | Tie after this branch (ported from `work`). |
+| **Tool depth** | *Before:* thin wrappers over the raw API. *Now:* raw wrappers plus shaped reports, opportunity finders, indexing audits, cross-source SEO tools, and scoped universal reads (GA 76, GSC 31, Insights 111 tools). | Raw wrappers **plus** shaped reports (`get_product_performance`, `get_best_sellers`…), diagnostics (`render_*_issues`), universal scoped `merchant_api_read` / `merchant_api_write`, `batch_*`. | Tie after this branch. |
+| **Discoverability** | *Now:* `describe_capabilities` on every Worker, `get_metadata` for GA field names. | `list_merchant_capabilities` catalog tool. | Tie after this branch. |
 | **Scope locking** | Property/site from env; URLs asserted inside the GSC property; account summaries filtered. | Account ID from env; universal paths must contain only that account; sub-API allowlist. | Tie — both are solid; the universal-tool path validator in `work` is the pattern Work2 needs. |
 | **Template leftovers** | None. | `public/index.html` and `test/index.spec.ts` are unmodified Wrangler boilerplate. | Work2. |
 
@@ -169,15 +169,21 @@ Approximate result: **7 → ~25 tools**.
 
 ---
 
-## 6. Suggested phases
+## 6. Phases and status
 
-1. **Hygiene (this branch):** lockfile sync, full `wrangler types` output, `.gitignore` covers the secret filenames the README tells developers to place locally.
-2. **Conventions:** annotations + titles + `change_summary` + `describe_capabilities` + fetch timeouts. Pure refactor, no new Google calls.
-3. **GA Tier A + `get_metadata`, GSC `get_site_details` + `inspect_urls`.**
-4. **Shaped reports (GA Tier B, GSC shaped tools).** Highest day-to-day value.
-5. **Universal scoped reads** (`ga_api_read`, `gsc_api_read`).
-6. **Workers Builds** on `main`; retire manual deploy scripts from the runbook.
-7. **Optional:** merge GA + GSC into one Worker per brand and add §5.3.
+| Phase | Status |
+| --- | --- |
+| 1. Hygiene: lockfile sync, full `wrangler types` output, `.gitignore` covers secret filenames | **Done** |
+| 2. Conventions: annotations + titles + `change_summary` + `describe_capabilities` + fetch timeouts | **Done** |
+| 3. GA Tier A + `get_metadata`; GSC `get_site_details` + `inspect_urls` | **Done** (endpoints verified against the Google discovery documents for Admin v1beta/v1alpha, Data v1beta/v1alpha, Search Console v1) |
+| 4. Shaped reports (GA Tier B, GSC shaped tools) | **Done** — 17 GA report presets + funnel + realtime + compare; 17 GSC shaped/opportunity/indexing tools |
+| 5. Universal scoped reads (`ga_api_read`, `gsc_api_read`) | **Done** |
+| 6. Workers Builds on `main` | **Pending** — configured in the Cloudflare dashboard, not in code (see `work` README for the trigger table) |
+| 7. Combined GA + GSC Worker per brand with cross-source tools (§5.3) | **Done in code** (`wrangler.insights.jsonc`, `src/insights/`); needs two KV namespaces and secrets before its first deploy |
+
+Final tool counts: **GA 11 → 76**, **GSC 7 → 31**, **Insights 111** (GA `ga_*` + GSC `gsc_*` + 5 cross-source + `describe_capabilities`).
+
+Deliberately not built: Measurement Protocol secret listing (returns secret values), `sites.add/delete`, the Indexing API, any universal write, and the deprecated mobile-friendly test endpoint.
 
 ---
 
@@ -186,6 +192,11 @@ Approximate result: **7 → ~25 tools**.
 - `package-lock.json` regenerated — `npm ci` failed because `@types/node` was missing from the lock.
 - `types/worker-configuration.d.ts` regenerated with `npm run types` — the committed file had been trimmed to the `Env` interface only, so `tsc` could not find `ExecutionContext`, `ExportedHandler`, or `KVNamespace`.
 - `.gitignore` now excludes `GOOGLE_SERVICE_ACCOUNT_KEY.json`, `MCP_LOGIN_PASSWORD*`, `*-secrets/`, and archive files, matching the README's quick-start instructions.
-- This document.
+- `src/shared/mcp.ts`: annotation constants, `execute`, `toolNamer`, `mapWithConcurrency`. `src/shared/google-api.ts`: 20 s `AbortSignal.timeout` on every Google call.
+- `src/ga/`: client extended (Admin list/get generics, key events, custom definitions, access report, change history, metadata, compatibility, pivot, batch, audience exports, quota snapshot, scoped `gaApiRead`); `report-shaping.ts` (simplify, compare periods, shaped-report catalogue); tools split into `tools-config.ts`, `tools-data.ts`, `tools-reports.ts`.
+- `src/gsc/`: client extended (`sites.get`, simple filters, sitemap XML download/parse with property check, scoped `gscApiRead`); `analytics-shaping.ts` (flatten, compare, striking distance, CTR curve, brand split, cannibalisation, inspection summary); `tools.ts`.
+- `src/insights/server.ts` + `src/insights-worker.ts` + `wrangler.insights.jsonc`: combined per-brand Worker with cross-source tools.
+- Tests: 37 Vitest tests, including in-memory MCP client smoke tests that connect to each server, list tools, assert titles/annotations/uniqueness, and call tools.
+- README rewritten with the tool inventory and the Insights deploy steps.
 
-Verified after the changes: `npm run typecheck`, `npm test` (8/8), and `npm run build` (dry-run deploy of every GA and GSC env) all pass.
+Verified after the changes: `npm run typecheck`, `npm test` (37/37), and `npm run build` (dry-run deploy of every GA, GSC, and Insights env) all pass.
