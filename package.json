@@ -6,6 +6,7 @@
   "scripts": {
     "dev:ga": "wrangler dev --config wrangler.ga.jsonc --env layal --port 8791 --inspector-port 9291",
     "dev:gsc": "wrangler dev --config wrangler.gsc.jsonc --env layal --port 8792 --inspector-port 9292",
+    "dev:insights": "wrangler dev --config wrangler.insights.jsonc --env layal --port 8793 --inspector-port 9293",
     "deploy:ga:layal": "wrangler deploy --config wrangler.ga.jsonc --env layal",
     "deploy:ga:toleen": "wrangler deploy --config wrangler.ga.jsonc --env toleen",
     "deploy:ga:asom": "wrangler deploy --config wrangler.ga.jsonc --env asom",
@@ -13,11 +14,15 @@
     "deploy:gsc:toleen": "wrangler deploy --config wrangler.gsc.jsonc --env toleen",
     "deploy:gsc:asom": "wrangler deploy --config wrangler.gsc.jsonc --env asom",
     "deploy:gsc:ahmedayoutty": "wrangler deploy --config wrangler.gsc.jsonc --env ahmedayoutty",
+    "deploy:insights:layal": "wrangler deploy --config wrangler.insights.jsonc --env layal",
+    "deploy:insights:toleen": "wrangler deploy --config wrangler.insights.jsonc --env toleen",
+    "deploy:live": "npm run deploy:ga:layal && npm run deploy:ga:toleen && npm run deploy:gsc:layal && npm run deploy:gsc:toleen",
     "typecheck": "tsc --noEmit",
     "types": "wrangler types --config wrangler.ga.jsonc --env layal --env-file .dev.vars.example --strict-vars=false types/worker-configuration.d.ts",
     "build:ga": "wrangler deploy --dry-run --config wrangler.ga.jsonc --env layal && wrangler deploy --dry-run --config wrangler.ga.jsonc --env toleen && wrangler deploy --dry-run --config wrangler.ga.jsonc --env asom",
     "build:gsc": "wrangler deploy --dry-run --config wrangler.gsc.jsonc --env layal && wrangler deploy --dry-run --config wrangler.gsc.jsonc --env toleen && wrangler deploy --dry-run --config wrangler.gsc.jsonc --env asom && wrangler deploy --dry-run --config wrangler.gsc.jsonc --env ahmedayoutty",
-    "build": "npm run typecheck && npm run build:ga && npm run build:gsc",
+    "build:insights": "wrangler deploy --dry-run --config wrangler.insights.jsonc --env layal && wrangler deploy --dry-run --config wrangler.insights.jsonc --env toleen",
+    "build": "npm run typecheck && npm run build:ga && npm run build:gsc && npm run build:insights",
     "test": "vitest run"
   },
   "dependencies": {
@@ -27,6 +32,7 @@
     "zod": "^4.5.4"
   },
   "devDependencies": {
+    "@modelcontextprotocol/client": "^2.0.0",
     "@types/node": "^26.4.1",
     "typescript": "^7.0.2",
     "vitest": "^5.0.0",

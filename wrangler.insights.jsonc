@@ -1,0 +1,54 @@
+{
+  // Combined Worker: one connector per brand exposing GA (ga_*), Search Console
+  // (gsc_*), and cross-source SEO tools. Each env has its own OAuth KV namespace
+  // (created in the Cloudflare account). Upload the two secrets per env, then
+  // run `npm run deploy:insights:<brand>`.
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "google-insights-mcp-template",
+  "main": "src/insights-worker.ts",
+  "compatibility_date": "2026-09-04",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1,
+    "logs": {
+      "enabled": true,
+      "invocation_logs": true,
+      "head_sampling_rate": 1
+    }
+  },
+  "env": {
+    "layal": {
+      "name": "layal-google-insights-mcp",
+      "vars": {
+        "BRAND_SLUG": "layal",
+        "BRAND_LABEL": "Layal Dress",
+        "BRAND_SITE_URL": "https://layaldress.com/",
+        "GA_ACCOUNT_ID": "387714621",
+        "GA_ACCOUNT_NAME": "فساتين ليال",
+        "GA_PROPERTY_ID": "528542206",
+        "GSC_SITE_URL": "sc-domain:layaldress.com"
+      },
+      "kv_namespaces": [{
+        "binding": "OAUTH_KV",
+        "id": "f67e3f0558984ccfb06d5ece83a8123c"
+      }]
+    },
+    "toleen": {
+      "name": "toleen-google-insights-mcp",
+      "vars": {
+        "BRAND_SLUG": "toleen",
+        "BRAND_LABEL": "Toleen Fashion",
+        "BRAND_SITE_URL": "https://toleen-fashion22.com/",
+        "GA_ACCOUNT_ID": "375645449",
+        "GA_ACCOUNT_NAME": "toleen-fashion22.com",
+        "GA_PROPERTY_ID": "513746872",
+        "GSC_SITE_URL": "https://toleen-fashion22.com/"
+      },
+      "kv_namespaces": [{
+        "binding": "OAUTH_KV",
+        "id": "7b6d3bd481bc48c9b021183222f4af19"
+      }]
+    }
+  }
+}

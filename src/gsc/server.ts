@@ -1,213 +1,80 @@
 import { McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
-import { errorToolResult, jsonToolResult } from "../shared/mcp";
-import { assertUrlBelongsToGscProperty } from "../shared/scope";
-import { requireGscProperty, websiteFromEnv } from "../shared/website";
-import * as gsc from "./gsc-client";
+import { execute, readAnnotations, toolNamer } from "../shared/mcp";
+import { websiteFromEnv, type WebsiteConfig } from "../shared/website";
+import type { GscToolContext } from "./context";
+import { registerGscTools } from "./tools";
 
-const dateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Use YYYY-MM-DD.");
-const jsonObjectSchema = z.record(z.string(), z.unknown());
-
-async function execute(operation: () => Promise<unknown>) {
-  try {
-    return jsonToolResult(await operation());
-  } catch (error) {
-    return errorToolResult(error);
-  }
+export function gscCapabilities(website: WebsiteConfig, prefix = "") {
+  const n = toolNamer(prefix);
+  return {
+    product: "Google Search Console",
+    brand: website.label,
+    property: website.gscSiteUrl || website.siteUrl || null,
+    performance: [
+      n("get_top_queries"),
+      n("get_top_pages"),
+      n("get_query_page_pairs"),
+      n("get_page_queries"),
+      n("get_query_pages"),
+      n("get_country_breakdown"),
+      n("get_device_breakdown"),
+      n("get_device_country_breakdown"),
+      n("get_search_appearance_breakdown"),
+      n("get_daily_trend"),
+      n("get_hourly_performance"),
+      n("get_discover_performance"),
+      n("compare_periods")
+    ],
+    opportunities: [
+      n("find_striking_distance_keywords"),
+      n("find_ctr_opportunities"),
+      n("find_query_cannibalization"),
+      n("get_brand_vs_nonbrand")
+    ],
+    indexing: [n("inspect_url"), n("inspect_urls"), n("get_index_coverage_sample"), n("audit_sitemap"), n("find_orphan_pages")],
+    sitemaps: [n("list_sitemaps"), n("get_sitemap"), n("submit_sitemap"), n("delete_sitemap")],
+    raw: [n("search_analytics"), n("list_sites"), n("get_site_details"), n("gsc_api_read")],
+    approvalRule:
+      "submit_sitemap and delete_sitemap are the only writes; both are annotated destructive and take change_summary.",
+    limits: [
+      "Search Console data lags 2-3 days; end dates default to 3 days ago.",
+      "URL inspection: 2,000 calls per day and 600 per minute per property.",
+      "Crawl stats, Core Web Vitals, manual actions, and removals have no public API."
+    ]
+  };
 }
 
-function asRecord(value: unknown): Record<string, unknown> | undefined {
-  return value !== null && typeof value === "object" && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
-    : undefined;
-}
-
-function filterSites(
-  result: Record<string, unknown>,
-  siteUrl: string
-): Record<string, unknown> {
-  const entries = Array.isArray(result.siteEntry) ? result.siteEntry : [];
-  const filtered = entries.filter((entry) => asRecord(entry)?.siteUrl === siteUrl);
-  if (!filtered.length) {
-    throw new Error(
-      `Configured Search Console property "${siteUrl}" is not visible to the service account. Add the service account as a Full user.`
-    );
-  }
-  return { siteEntry: filtered };
+export function registerGscToolSet(server: McpServer, env: Env, prefix = ""): GscToolContext {
+  const website = websiteFromEnv(env);
+  const context: GscToolContext = {
+    server,
+    key: env.GOOGLE_SERVICE_ACCOUNT_KEY,
+    website,
+    name: toolNamer(prefix),
+    lock: `This Worker is permanently locked to ${website.label}.`
+  };
+  registerGscTools(context);
+  return context;
 }
 
 export function createGscServer(env: Env): McpServer {
   const website = websiteFromEnv(env);
   const server = new McpServer({
     name: `Google Search Console MCP — ${website.label}`,
-    version: "1.0.0"
+    version: "2.0.0"
   });
-  const key = env.GOOGLE_SERVICE_ACCOUNT_KEY;
-  const scopeDescription = `This Worker is permanently locked to ${website.label}.`;
-
+  registerGscToolSet(server, env);
   server.registerTool(
-    "list_sites",
+    "describe_capabilities",
     {
-      description: `List Search Console properties available to the service account. ${scopeDescription}`,
-      inputSchema: {}
-    },
-    async () =>
-      execute(async () => {
-        const result = await gsc.listSites(key);
-        return filterSites(result, requireGscProperty(website));
-      })
-  );
-
-  server.registerTool(
-    "search_analytics",
-    {
+      title: "Describe this connector",
       description:
-        `Query Search Console clicks, impressions, CTR, and average position. ${scopeDescription}`,
-      inputSchema: {
-        startDate: dateSchema,
-        endDate: dateSchema,
-        dimensions: z
-          .array(
-            z.enum([
-              "query",
-              "page",
-              "country",
-              "device",
-              "date",
-              "hour",
-              "searchAppearance"
-            ])
-          )
-          .optional(),
-        type: z
-          .enum(["web", "image", "video", "news", "discover", "googleNews"])
-          .optional(),
-        dataState: z.enum(["final", "all", "hourly_all"]).optional(),
-        aggregationType: z
-          .enum(["auto", "byPage", "byProperty", "byNewsShowcasePanel"])
-          .optional(),
-        dimensionFilterGroups: z.array(jsonObjectSchema).optional(),
-        rowLimit: z.number().int().min(1).max(25_000).optional(),
-        startRow: z.number().int().nonnegative().optional()
-      }
+        "What this Search Console connector can do, its brand lock, quotas, and the approval rule for writes. Call first when unsure which tool to use.",
+      inputSchema: z.object({}),
+      annotations: readAnnotations
     },
-    async (input) =>
-      execute(() =>
-        gsc.searchAnalytics(key, requireGscProperty(website), input)
-      )
+    async () => execute(() => gscCapabilities(website))
   );
-
-  server.registerTool(
-    "inspect_url",
-    {
-      description:
-        `Inspect the indexed version of a URL and return coverage, canonical, robots, rich-results, and crawl details. ${scopeDescription}`,
-      inputSchema: {
-        inspectionUrl: z.string().url(),
-        languageCode: z
-          .string()
-          .regex(/^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{2,8})*$/)
-          .optional()
-      }
-    },
-    async ({ inspectionUrl, languageCode }) =>
-      execute(() => {
-        const property = requireGscProperty(website);
-        return gsc.inspectUrl(
-          key,
-          property,
-          assertUrlBelongsToGscProperty(inspectionUrl, property, "inspectionUrl"),
-          languageCode
-        );
-      })
-  );
-
-  server.registerTool(
-    "list_sitemaps",
-    {
-      description: `List submitted sitemaps for a Search Console property. ${scopeDescription}`,
-      inputSchema: {
-        sitemapIndex: z.string().url().optional()
-      }
-    },
-    async ({ sitemapIndex }) =>
-      execute(() => {
-        const property = requireGscProperty(website);
-        return gsc.listSitemaps(
-          key,
-          property,
-          sitemapIndex
-            ? assertUrlBelongsToGscProperty(
-                sitemapIndex,
-                property,
-                "sitemapIndex"
-              )
-            : undefined
-        );
-      })
-  );
-
-  server.registerTool(
-    "get_sitemap",
-    {
-      description: `Get details for one submitted sitemap. ${scopeDescription}`,
-      inputSchema: {
-        feedpath: z.string().url().describe("The full sitemap URL.")
-      }
-    },
-    async ({ feedpath }) =>
-      execute(() => {
-        const property = requireGscProperty(website);
-        return gsc.getSitemap(
-          key,
-          property,
-          assertUrlBelongsToGscProperty(feedpath, property, "feedpath")
-        );
-      })
-  );
-
-  server.registerTool(
-    "submit_sitemap",
-    {
-      description:
-        `Submit or resubmit a sitemap to Google Search Console. ${scopeDescription}`,
-      inputSchema: {
-        feedpath: z.string().url().describe("The full sitemap URL.")
-      }
-    },
-    async ({ feedpath }) =>
-      execute(() => {
-        const property = requireGscProperty(website);
-        return gsc.submitSitemap(
-          key,
-          property,
-          assertUrlBelongsToGscProperty(feedpath, property, "feedpath")
-        );
-      })
-  );
-
-  server.registerTool(
-    "delete_sitemap",
-    {
-      description:
-        `Remove a submitted sitemap from Google Search Console. This does not delete the sitemap file. ${scopeDescription}`,
-      inputSchema: {
-        feedpath: z.string().url().describe("The full sitemap URL."),
-        confirm: z
-          .literal(true)
-          .describe("Must be true to confirm removing the sitemap submission.")
-      }
-    },
-    async ({ feedpath }) =>
-      execute(() => {
-        const property = requireGscProperty(website);
-        return gsc.deleteSitemap(
-          key,
-          property,
-          assertUrlBelongsToGscProperty(feedpath, property, "feedpath")
-        );
-      })
-  );
-
   return server;
 }

@@ -14,6 +14,7 @@ const googleErrorSchema = z.object({
 });
 
 const retryStatuses = new Set([429, 500, 502, 503, 504]);
+export const GOOGLE_REQUEST_TIMEOUT_MS = 20_000;
 
 function randomJitter(maximum: number): number {
   const value = crypto.getRandomValues(new Uint32Array(1))[0] ?? 0;
@@ -58,15 +59,26 @@ export async function fetchGoogleJson(
 
   for (;;) {
     const accessToken = await getGoogleAccessToken(rawKey, scope);
-    const response = await fetch(url, {
-      ...init,
-      headers: {
-        Accept: "application/json",
-        ...(init.body ? { "Content-Type": "application/json" } : {}),
-        ...init.headers,
-        Authorization: `Bearer ${accessToken}`
+    let response: Response;
+    try {
+      response = await fetch(url, {
+        ...init,
+        headers: {
+          Accept: "application/json",
+          ...(init.body ? { "Content-Type": "application/json" } : {}),
+          ...init.headers,
+          Authorization: `Bearer ${accessToken}`
+        },
+        signal: AbortSignal.timeout(GOOGLE_REQUEST_TIMEOUT_MS)
+      });
+    } catch (error) {
+      if (error instanceof Error && error.name === "TimeoutError") {
+        throw new Error(
+          `Google API request timed out after ${GOOGLE_REQUEST_TIMEOUT_MS / 1000}s.`
+        );
       }
-    });
+      throw error;
+    }
 
     if (response.status === 401 && !refreshedToken) {
       await invalidateGoogleAccessToken(rawKey, scope);
