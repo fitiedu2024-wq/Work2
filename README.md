@@ -92,6 +92,21 @@ npm run deploy:insights:toleen
 
 Resulting URLs: `https://layal-google-insights-mcp.google-merchant-mcp.workers.dev/mcp` and `https://toleen-google-insights-mcp.google-merchant-mcp.workers.dev/mcp`. The four single-product Workers keep working unchanged.
 
+### Recommended: automatic deploys with Workers Builds
+
+Connect each Worker to this repository once (Cloudflare dashboard → Workers & Pages → the Worker → **Settings → Builds → Connect**), production branch `main`, root directory `/`, build command empty. Every merge to `main` then deploys all six Workers; pushes to other branches only upload preview versions.
+
+| Worker | Production deploy command | Preview deploy command |
+| --- | --- | --- |
+| `layal-google-analytics-mcp` | `npx wrangler deploy --config wrangler.ga.jsonc --env layal` | `npx wrangler versions upload --config wrangler.ga.jsonc --env layal` |
+| `toleen-google-analytics-mcp` | `npx wrangler deploy --config wrangler.ga.jsonc --env toleen` | `npx wrangler versions upload --config wrangler.ga.jsonc --env toleen` |
+| `layal-google-search-console-mcp` | `npx wrangler deploy --config wrangler.gsc.jsonc --env layal` | `npx wrangler versions upload --config wrangler.gsc.jsonc --env layal` |
+| `toleen-google-search-console-mcp` | `npx wrangler deploy --config wrangler.gsc.jsonc --env toleen` | `npx wrangler versions upload --config wrangler.gsc.jsonc --env toleen` |
+| `layal-google-insights-mcp` | `npx wrangler deploy --config wrangler.insights.jsonc --env layal` | `npx wrangler versions upload --config wrangler.insights.jsonc --env layal` |
+| `toleen-google-insights-mcp` | `npx wrangler deploy --config wrangler.insights.jsonc --env toleen` | `npx wrangler versions upload --config wrangler.insights.jsonc --env toleen` |
+
+The `--config` and `--env` flags are required on every trigger: without them Wrangler would deploy the template name at the top of the config file. Secrets stay on the Workers and are untouched by builds.
+
 ---
 
 ## Live MCP URLs
@@ -104,6 +119,8 @@ Paste into Cursor **Add MCP Server**, Claude custom connectors, or any OAuth-cap
 | Toleen Analytics | https://toleen-google-analytics-mcp.google-merchant-mcp.workers.dev/mcp |
 | Layal Search Console | https://layal-google-search-console-mcp.google-merchant-mcp.workers.dev/mcp |
 | Toleen Search Console | https://toleen-google-search-console-mcp.google-merchant-mcp.workers.dev/mcp |
+| Layal Insights (GA + GSC + cross-source) | https://layal-google-insights-mcp.google-merchant-mcp.workers.dev/mcp |
+| Toleen Insights (GA + GSC + cross-source) | https://toleen-google-insights-mcp.google-merchant-mcp.workers.dev/mcp |
 
 Each connector runs OAuth 2.1 discovery, opens `/authorize`, and requires `MCP_LOGIN_PASSWORD`. Tokens are bound to that Worker’s `/mcp` URL (a Layal token cannot call Toleen).
 
