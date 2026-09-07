@@ -1,9 +1,8 @@
 {
   // Combined Worker: one connector per brand exposing GA (ga_*), Search Console
-  // (gsc_*), and cross-source SEO tools. Each env needs its own OAuth KV:
-  //   npx wrangler kv namespace create layal-insights-oauth
-  //   npx wrangler kv namespace create toleen-insights-oauth
-  // then paste the returned IDs below and run `npm run deploy:insights:<brand>`.
+  // (gsc_*), and cross-source SEO tools. Each env has its own OAuth KV namespace
+  // (created in the Cloudflare account). Upload the two secrets per env, then
+  // run `npm run deploy:insights:<brand>`.
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "google-insights-mcp-template",
   "main": "src/insights-worker.ts",
@@ -32,7 +31,7 @@
       },
       "kv_namespaces": [{
         "binding": "OAUTH_KV",
-        "id": "REPLACE_WITH_LAYAL_INSIGHTS_OAUTH_KV_ID"
+        "id": "f67e3f0558984ccfb06d5ece83a8123c"
       }]
     },
     "toleen": {
@@ -48,7 +47,7 @@
       },
       "kv_namespaces": [{
         "binding": "OAUTH_KV",
-        "id": "REPLACE_WITH_TOLEEN_INSIGHTS_OAUTH_KV_ID"
+        "id": "7b6d3bd481bc48c9b021183222f4af19"
       }]
     }
   }

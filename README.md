@@ -79,13 +79,9 @@ npm run build      # dry-run deploy of every env in every Wrangler config
 
 ### Optional: combined Insights Worker (one connector per brand)
 
-`wrangler.insights.jsonc` deploys **one Worker per brand** that serves the GA tools (prefixed `ga_`), the Search Console tools (prefixed `gsc_`), and cross-source SEO tools that join both. It needs its own OAuth KV namespace per brand:
+`wrangler.insights.jsonc` deploys **one Worker per brand** that serves the GA tools (prefixed `ga_`), the Search Console tools (prefixed `gsc_`), and cross-source SEO tools that join both. Its OAuth KV namespaces (`layal-google-insights-mcp-oauth`, `toleen-google-insights-mcp-oauth`) already exist in the account and are referenced in the config. Upload the secrets, then deploy:
 
 ```bash
-npx wrangler kv namespace create layal-insights-oauth
-npx wrangler kv namespace create toleen-insights-oauth
-# paste the returned IDs into wrangler.insights.jsonc (REPLACE_WITH_*_INSIGHTS_OAUTH_KV_ID)
-
 for env in layal toleen; do
   npx wrangler secret put GOOGLE_SERVICE_ACCOUNT_KEY --config wrangler.insights.jsonc --env $env < GOOGLE_SERVICE_ACCOUNT_KEY.json
   printf "%s" "$MCP_LOGIN_PASSWORD" | npx wrangler secret put MCP_LOGIN_PASSWORD --config wrangler.insights.jsonc --env $env
